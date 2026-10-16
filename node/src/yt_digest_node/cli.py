@@ -36,6 +36,8 @@ def _parser() -> argparse.ArgumentParser:
     transcript.add_argument("video_id", type=_video_id)
     transcript.add_argument("--langs")
     transcript.add_argument("--request-id")
+    work = commands.add_parser("work")
+    work.add_argument("--once", action="store_true")
     return parser
 
 
@@ -121,6 +123,15 @@ def main(
 ) -> int:
     env = os.environ if env is None else env
     args = _parser().parse_args(argv)  # exits with 2 on a bad argument
+    if args.command == "work":
+        from yt_digest_node.daemon import work
+
+        try:
+            return work(env, args.once)
+        except ValueError as error:
+            # standard error holds only log lines in this mode (spec 9)
+            print(f"yt-digest-node: error: {error}")
+            return 2
     try:
         langs = _langs(
             args.langs
