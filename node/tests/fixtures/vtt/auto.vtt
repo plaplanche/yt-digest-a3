@@ -1,0 +1,23 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.000 --> 00:00:02.000 align:start position:0%
+
+hello<00:00:00.500><c> everyone</c><00:00:01.000><c> and</c><00:00:01.500><c> welcome</c>
+
+00:00:02.000 --> 00:00:02.010 align:start position:0%
+hello everyone and welcome
+ 
+
+00:00:02.010 --> 00:00:04.000 align:start position:0%
+hello everyone and welcome
+to<00:00:02.500><c> the</c><00:00:03.000><c> channel</c>
+
+00:00:04.000 --> 00:00:04.010 align:start position:0%
+to the channel
+ 
+
+00:00:04.010 --> 00:00:06.000 align:start position:0%
+to the channel
+today<00:00:05.000><c.colorE5E5E5> we</c><00:00:05.500><c> talk</c>
