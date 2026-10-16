@@ -84,7 +84,7 @@ describe("node protocol schemas", () => {
 
 describe("generated result request", () => {
   test("uses the generated transcript-result type without redefining it", () => {
-    const source = readFileSync(new URL("../src/contracts/node-result-request.ts", import.meta.url), "utf8");
+    const source = readFileSync(new URL("../src/contracts/node-result-request.ts", import.meta.url).pathname, "utf8");
     expect(source).toContain('import type { TranscriptResult } from "./transcript-result";');
     expect(source).not.toMatch(/interface TranscriptResult/);
     expectTypeOf<NodeResultRequest["transcript"]>().toEqualTypeOf<TranscriptResult | null>();
