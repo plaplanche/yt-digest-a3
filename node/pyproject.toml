@@ -3,10 +3,17 @@ name = "yt-digest-node"
 version = "0.1.0"
 description = "yt-digest node: transcript pipeline"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.1",
+]
 
 [dependency-groups]
-dev = ["mypy", "pytest", "ruff"]
+dev = [
+    "datamodel-code-generator>=0.85.0",
+    "mypy",
+    "pytest",
+    "ruff",
+]
 
 [build-system]
 requires = ["hatchling"]
