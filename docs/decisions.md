@@ -8,3 +8,6 @@
 2026-10-16: A cue is "kept" (5.4 step 5) when at least one of its lines survives steps 3 and 4; the paragraph gap is measured in whole milliseconds so that 2.0 s starts a paragraph despite float rounding.
 2026-10-16: SponsorBlock segments enter `clean_cues` as a list of `(start, end)` float pairs, and the result is a list of paragraph strings, so that truncation and pages can follow without re-splitting.
 2026-10-16: SponsorBlock uses the standard library `urllib`; the log line carries the HTTP status (0 on a network error), and a 200 body that is not the expected JSON counts as `error` with no segments.
+2026-10-16: The yt-dlp extractor is built with the languages in use and downloads only the VTT of those languages (manual then auto), over `urllib`, since auto captions exist in hundreds of languages; the delay applies before the info request and before each subtitle download.
+2026-10-16: yt-dlp errors are mapped by message: "not a bot" gives `blocked`; "private video", "confirm your age", "age-restricted", "unavailable" or "removed" give `unavailable`; any other error is raised.
+2026-10-16: `yt-dlp` is a runtime dependency of the node package and is imported lazily, so tests inject a stub factory; `make_extractor` raises `ValueError` when `FETCHER_FAKE_YTDLP=1` without `FAKE_YTDLP_DIR`, and the fake extractor never delays.
