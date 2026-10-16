@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NodeHeartbeatResponse",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["node_id", "state", "hourly_budget", "directive"],
+  "properties": {
+    "node_id": {"type": "string"},
+    "state": {"type": "string", "enum": ["healthy", "degraded", "quarantined", "offline", "disabled"]},
+    "hourly_budget": {"type": "integer", "minimum": 0},
+    "directive": {"type": "string", "enum": ["run", "pause", "drain"]}
+  }
+}

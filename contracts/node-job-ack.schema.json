@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NodeJobAck",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["video_id", "status"],
+  "properties": {
+    "video_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{11}$"},
+    "status": {"type": "string", "enum": ["queued", "leased", "done", "failed_video"]}
+  }
+}

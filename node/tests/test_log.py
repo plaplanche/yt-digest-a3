@@ -20,6 +20,13 @@ def test_emit_writes_one_json_line_on_stderr(
     assert "video_id" not in line
 
 
+def test_emit_accepts_a_lot_2_event(capsys: pytest.CaptureFixture[str]) -> None:
+    emit("job.claimed", video_id="dQw4w9WgXcQ", attrs={"node_id": "n1"})
+    line = json.loads(capsys.readouterr().err)
+    assert line["event"] == "job.claimed"
+    assert line["video_id"] == "dQw4w9WgXcQ"
+
+
 def test_emit_rejects_event_outside_the_catalogue() -> None:
     with pytest.raises(ValueError):
         emit("unknown.event")

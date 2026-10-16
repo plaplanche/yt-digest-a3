@@ -19,18 +19,46 @@ mkdir -p "$out/ts" "$out/py"
 uv sync --project node --locked --quiet
 [[ -d worker/node_modules ]] || npm ci --prefix worker --silent
 
+# Name of the generated type of a schema: its title.
+type_name() { python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["title"])' "$1"; }
+
 for schema in contracts/*.schema.json; do
   name="$(basename "$schema" .schema.json)"
   module="${name//-/_}"
+  # A $ref to a sibling schema resolves to that schema's generated type, never to a second definition.
+  # shellcheck disable=SC2016
+  refs="$(grep -oE '"\$ref": *"[a-z-]+\.schema\.json"' "$schema" | sed -E 's/.*"([a-z-]+)\.schema\.json"/\1/' | sort -u || true)"
+  ts_input="$schema"
+  if [[ -n "$refs" ]]; then
+    ts_input="$out/$name.ts-input.json"
+    cp "$schema" "$ts_input"
+    for ref in $refs; do
+      sed -i -E "s/\{\"\\\$ref\": *\"$ref\.schema\.json\"\}/{\"tsType\": \"$(type_name "contracts/$ref.schema.json")\"}/" "$ts_input"
+    done
+  fi
   {
     echo "// Generated from $schema by scripts/contracts.sh. Do not edit."
-    npm exec --prefix worker --silent -- json2ts --input "$schema" \
+    for ref in $refs; do
+      echo "import type { $(type_name "contracts/$ref.schema.json") } from \"./$ref\";"
+    done
+    npm exec --prefix worker --silent -- json2ts --input "$ts_input" \
       --bannerComment ''
   } >"$out/ts/$name.ts"
-  uv run --project node datamodel-codegen --input "$schema" --input-file-type jsonschema \
-    --output-model-type pydantic_v2.BaseModel --use-subclass-enum --use-annotated --field-constraints --formatters ruff-format --target-python-version 3.12 \
-    --disable-timestamp --custom-file-header "# Generated from $schema by scripts/contracts.sh. Do not edit." \
-    --output "$out/py/$module.py"
+  codegen=(uv run --project node datamodel-codegen --input "$schema" --input-file-type jsonschema
+    --output-model-type pydantic_v2.BaseModel --use-subclass-enum --use-annotated --field-constraints --formatters ruff-format --target-python-version 3.12
+    --disable-timestamp --custom-file-header "# Generated from $schema by scripts/contracts.sh. Do not edit.")
+  if [[ -z "$refs" ]]; then
+    "${codegen[@]}" --output "$out/py/$module.py"
+  else
+    # A schema with a $ref is generated as a package; keep its main module and import the referenced types.
+    "${codegen[@]}" --output "$out/pkg-$module"
+    cp "$out/pkg-$module/__init__.py" "$out/py/$module.py"
+    for ref in $refs; do
+      ref_module="${ref//-/_}"
+      ref_type="$(type_name "contracts/$ref.schema.json")"
+      sed -i -E "s/^from \. import $ref_module\$/from .$ref_module import $ref_type/; s/\b$ref_module\.Schema\b/$ref_type/g" "$out/py/$module.py"
+    done
+  fi
 done
 touch "$out/py/__init__.py"
 
