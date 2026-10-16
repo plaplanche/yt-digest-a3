@@ -23,3 +23,6 @@
 2026-10-16: The operator bearer is compared by hashing both sides with SHA-256 and calling `crypto.subtle.timingSafeEqual`, so the length of the secret does not leak.
 2026-10-16: `/ops/reset` deletes the rows of the ten tables of 6.3 in one D1 batch (the `d1_migrations` bookkeeping table is kept), then lists and deletes R2 objects by `transcripts/` prefix page by page.
 2026-10-16: A rejected `/ops/*` bearer logs `auth.bearer.rejected` with `reason` `missing` or `unknown` (a wrong token), as the catalogue has no other fitting reason.
+2026-10-16: The placeholder `export const name` of the Worker is removed with its test, as workerd refuses an export that is not a handler and `wrangler dev` could not start.
+2026-10-16: `stack.sh` keeps one PID file per process in `.stack/pids/` (each process is its own session leader, so its PID is its process group), and an `OPS_TOKEN` that is set but empty is passed through empty, which disables `/ops`.
+2026-10-16: The Playwright projects are split by file name: `*.api.spec.ts` for `api` and `*.browser.spec.ts` for `browser`; the `e2e` check removes no old report, and copies `.stack/logs/` and `playwright-report/` to `ci-artifacts/` on failure.

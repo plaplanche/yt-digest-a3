@@ -3,8 +3,6 @@ import type { Env } from "./env";
 import { json, notFound } from "./http";
 import { handleOps } from "./ops";
 
-export const name = "yt-digest-worker";
-
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const path = new URL(request.url).pathname;
