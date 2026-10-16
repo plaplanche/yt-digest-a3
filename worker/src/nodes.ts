@@ -4,12 +4,14 @@ import { isInteger, isText, isTimestamp, readObject, unknownFields } from "./bod
 import type { Env } from "./env";
 import { bearer, invalidRequest, json, notFound, unauthorized } from "./http";
 import { log } from "./log";
+import { sweepExpired } from "./leases";
+import { releaseJob, result } from "./results";
 import { sha256Hex } from "./tokens";
 
 const DEFAULT_LEASE_SECONDS = 600;
 const DEFAULT_MAX_JOBS = 3;
 
-interface NodeRow {
+export interface NodeRow {
   node_id: string;
   hourly_budget: number;
 }
@@ -52,6 +54,7 @@ async function heartbeat(request: Request, env: Env, node: NodeRow): Promise<Res
   if (body instanceof Response) return body;
   const problem = heartbeatError(body);
   if (problem !== null) return invalidRequest(problem);
+  await sweepExpired(env);
   await env.DB.prepare("UPDATE nodes SET last_heartbeat_at = ?1, version = ?2 WHERE node_id = ?3")
     .bind(new Date().toISOString(), body.version, node.node_id)
     .run();
@@ -79,6 +82,7 @@ async function claim(request: Request, env: Env, node: NodeRow): Promise<Respons
   if (unknownFields(body, ["max_jobs"]).length > 0) return invalidRequest("Unknown field");
   if (body.max_jobs !== undefined && !isInteger(body.max_jobs, 1, 10)) return invalidRequest("max_jobs must be an integer from 1 to 10");
   const maxJobs = body.max_jobs ?? DEFAULT_MAX_JOBS;
+  await sweepExpired(env);
 
   const parsed = Number.parseInt(env.LEASE_SECONDS ?? "", 10);
   const leaseSeconds = Number.isInteger(parsed) && parsed > 0 ? parsed : DEFAULT_LEASE_SECONDS;
@@ -117,7 +121,7 @@ async function claim(request: Request, env: Env, node: NodeRow): Promise<Respons
 
 /** Handles `/node/*`: a known route needs a node token, anything else is a 404. */
 export async function handleNode(request: Request, env: Env, path: string): Promise<Response> {
-  const handler = request.method === "POST" ? { "/node/heartbeat": heartbeat, "/node/claim": claim }[path] : undefined;
+  const handler = request.method === "POST" ? { "/node/heartbeat": heartbeat, "/node/claim": claim, "/node/result": result, "/node/release": releaseJob }[path] : undefined;
   if (handler === undefined) return notFound();
   const node = await authenticate(request, env);
   if (node instanceof Response) return node;
