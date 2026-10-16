@@ -103,3 +103,74 @@ describe("POST /ops/reset", () => {
     expect((await env.TRANSCRIPTS.list({ prefix: "transcripts/" })).objects).toEqual([]);
   });
 });
+
+describe("invites", () => {
+  const post = (path: string, body: unknown): Promise<Response> => ops(path, { method: "POST", body: JSON.stringify(body) });
+  const invite = async (email: string): Promise<{ email: string; invited_at: string; revoked: number } | null> =>
+    env.DB.prepare("SELECT email, invited_at, revoked FROM invites WHERE email = ?1").bind(email).first();
+
+  test("an invite is stored lowercased", async () => {
+    await ops("/ops/reset", { method: "POST" });
+    const response = await post("/ops/invites", { email: "Bob@Test" });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ email: "bob@test", revoked: false });
+    expect(await invite("bob@test")).toMatchObject({ email: "bob@test", revoked: 0 });
+    expect(await invite("Bob@Test")).toBeNull();
+  });
+
+  test("inviting again re-activates a revoked invite", async () => {
+    await ops("/ops/reset", { method: "POST" });
+    await post("/ops/invites", { email: "bob@test" });
+    const revoked = await post("/ops/invites/revoke", { email: "BOB@test" });
+    expect(revoked.status).toBe(200);
+    expect(await revoked.json()).toEqual({ email: "bob@test", revoked: true });
+    expect(await invite("bob@test")).toMatchObject({ revoked: 1 });
+
+    const again = await post("/ops/invites", { email: "bob@test" });
+    expect(await again.json()).toEqual({ email: "bob@test", revoked: false });
+    expect(await invite("bob@test")).toMatchObject({ revoked: 0 });
+    expect(await count("invites")).toBe(1);
+  });
+
+  test("revoking an unknown invite gives 404 not_found", async () => {
+    await ops("/ops/reset", { method: "POST" });
+    const response = await post("/ops/invites/revoke", { email: "nobody@test" });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ error: { code: "not_found" } });
+  });
+
+  test.each([{}, { email: 1 }, { email: "no-at" }, { email: "a@b", extra: 1 }])("a bad body %j gives 400 invalid_request", async (body) => {
+    for (const path of ["/ops/invites", "/ops/invites/revoke"]) {
+      const response = await post(path, body);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toMatchObject({ error: { code: "invalid_request" } });
+    }
+    expect((await ops("/ops/invites", { method: "POST", body: "{not json" })).status).toBe(400);
+  });
+});
+
+describe("GET /ops/users", () => {
+  test("lists users sorted by e-mail", async () => {
+    await ops("/ops/reset", { method: "POST" });
+    const t = "2026-10-16T07:00:00.000Z";
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO users (user_sub, email, role, google_refresh_token_enc, created_at) VALUES ('s2', 'bob@test', 'member', 'secret', ?1)").bind(t),
+      env.DB.prepare("INSERT INTO users (user_sub, email, role, created_at) VALUES ('s1', 'alice@test', 'admin', ?1)").bind(t),
+      env.DB.prepare("INSERT INTO users (user_sub, email, role, created_at) VALUES ('s3', 'carol@test', 'member', ?1)").bind(t),
+    ]);
+    const response = await ops("/ops/users");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      users: [
+        { user_sub: "s1", email: "alice@test", role: "admin" },
+        { user_sub: "s2", email: "bob@test", role: "member" },
+        { user_sub: "s3", email: "carol@test", role: "member" },
+      ],
+    });
+  });
+
+  test("is an empty list without users", async () => {
+    await ops("/ops/reset", { method: "POST" });
+    expect(await (await ops("/ops/users")).json()).toEqual({ users: [] });
+  });
+});
