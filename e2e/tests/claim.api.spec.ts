@@ -36,8 +36,9 @@ test("2 nodes claim 6 jobs concurrently and each job is handed out once", async 
   const handedOut = answers.flat().map((job) => job.video_id);
   expect([...handedOut].sort()).toEqual([...ids].sort());
   expect(new Set(answers.flat().map((job) => job.lease_id)).size).toBe(6);
-  for (const id of ids) {
-    const job = await (await request.get(`${workerUrl}/ops/jobs/${id}`, { headers: opsHeaders })).json();
+  // The e2e stack's leases last 2 s: read the jobs in parallel so the results below stay well inside them.
+  const leasedJobs = await Promise.all(ids.map(async (id) => (await request.get(`${workerUrl}/ops/jobs/${id}`, { headers: opsHeaders })).json()));
+  for (const job of leasedJobs) {
     expect(job).toMatchObject({ status: "leased", attempts: 1 });
     expect(job.tried_nodes).toHaveLength(1);
   }
@@ -54,8 +55,8 @@ test("2 nodes claim 6 jobs concurrently and each job is handed out once", async 
       }),
     ),
   );
-  for (const id of ids) {
-    const job = await (await request.get(`${workerUrl}/ops/jobs/${id}`, { headers: opsHeaders })).json();
+  const doneJobs = await Promise.all(ids.map(async (id) => (await request.get(`${workerUrl}/ops/jobs/${id}`, { headers: opsHeaders })).json()));
+  for (const job of doneJobs) {
     expect(job).toMatchObject({ status: "done", attempts: 1 });
   }
 });

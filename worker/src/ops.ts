@@ -77,6 +77,36 @@ async function enqueueJobs(request: Request, env: Env): Promise<Response> {
   return json({ enqueued, existing });
 }
 
+/** Reads `{"email"}` and returns the lowercased e-mail, or the 400 response. */
+async function readEmail(request: Request): Promise<string | Response> {
+  const body = await readObject(request);
+  if (body instanceof Response) return body;
+  if (unknownFields(body, ["email"]).length > 0) return invalidRequest("Unknown field");
+  if (typeof body.email !== "string" || !body.email.includes("@")) return invalidRequest("email must be a string containing @");
+  return body.email.toLowerCase();
+}
+
+async function invite(request: Request, env: Env): Promise<Response> {
+  const email = await readEmail(request);
+  if (email instanceof Response) return email;
+  await env.DB.prepare("INSERT INTO invites (email, invited_at) VALUES (?1, ?2) ON CONFLICT (email) DO UPDATE SET revoked = 0")
+    .bind(email, new Date().toISOString())
+    .run();
+  return json({ email, revoked: false });
+}
+
+async function revokeInvite(request: Request, env: Env): Promise<Response> {
+  const email = await readEmail(request);
+  if (email instanceof Response) return email;
+  const updated = await env.DB.prepare("UPDATE invites SET revoked = 1 WHERE email = ?1").bind(email).run();
+  return updated.meta.changes === 0 ? notFound() : json({ email, revoked: true });
+}
+
+async function listUsers(env: Env): Promise<Response> {
+  const { results } = await env.DB.prepare("SELECT user_sub, email, role FROM users ORDER BY email").all<{ user_sub: string; email: string; role: string }>();
+  return json({ users: results });
+}
+
 interface JobRow {
   video_id: string;
   kind: string;
@@ -138,6 +168,15 @@ export async function handleOps(request: Request, env: Env, path: string): Promi
   }
   if (request.method === "POST" && path === "/ops/jobs") {
     return enqueueJobs(request, env);
+  }
+  if (request.method === "POST" && path === "/ops/invites") {
+    return invite(request, env);
+  }
+  if (request.method === "POST" && path === "/ops/invites/revoke") {
+    return revokeInvite(request, env);
+  }
+  if (request.method === "GET" && path === "/ops/users") {
+    return listUsers(env);
   }
   const job = /^\/ops\/jobs\/([^/]+)$/.exec(path);
   if (request.method === "GET" && job?.[1] !== undefined) {
