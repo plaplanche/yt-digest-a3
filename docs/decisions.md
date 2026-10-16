@@ -17,3 +17,9 @@
 2026-10-16: The truncation threshold is "more than `MAX_WORDS` words"; the tail is taken from the end of the paragraphs, so a paragraph cut by truncation keeps its first words in the head and its last words in the tail.
 2026-10-16: A `$ref` between schemas is resolved by `scripts/contracts.sh`: the TypeScript generator gets the reference as a `tsType` and the file imports the generated type; the Pydantic package output is reduced to its main module, which imports the generated type instead of the duplicate module.
 2026-10-16: `ajv` (2020-12 build, with the draft-07 meta-schema added for lot 1's schemas) is a worker dev dependency, used to validate instances against the schemas in tests.
+2026-10-16: Worker tests use `@cloudflare/vitest-plugin` (the renamed `@cloudflare/vitest-pool-workers`, which only supports vitest 4); one vitest config runs two projects, `node` for the existing tests and `worker` (`tests/worker/`) inside Miniflare with `migrations/` applied by a setup file.
+2026-10-16: Worker tests call the Worker's `fetch` with the real `DB` and `TRANSCRIPTS` bindings and the settings (`OPS_TOKEN`) passed as the environment argument, so one file can test both a set and an empty `OPS_TOKEN`.
+2026-10-16: `wrangler.toml` carries a placeholder `database_id` (all zeros), as the local D1 needs one and the spec forbids account ids.
+2026-10-16: The operator bearer is compared by hashing both sides with SHA-256 and calling `crypto.subtle.timingSafeEqual`, so the length of the secret does not leak.
+2026-10-16: `/ops/reset` deletes the rows of the ten tables of 6.3 in one D1 batch (the `d1_migrations` bookkeeping table is kept), then lists and deletes R2 objects by `transcripts/` prefix page by page.
+2026-10-16: A rejected `/ops/*` bearer logs `auth.bearer.rejected` with `reason` `missing` or `unknown` (a wrong token), as the catalogue has no other fitting reason.
