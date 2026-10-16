@@ -1,7 +1,9 @@
 import type { Env } from "./env";
 import { VIDEO_ID, isInteger, isText, readObject, unknownFields } from "./body";
 import { bearer, error, invalidRequest, json, notFound, safeEqual, unauthorized } from "./http";
+import { revokeNode, sweepExpired } from "./leases";
 import { log } from "./log";
+import { transcriptKey } from "./results";
 import { newNodeToken, sha256Hex } from "./tokens";
 
 const TABLES = [
@@ -90,6 +92,7 @@ interface JobRow {
 }
 
 async function showJob(env: Env, videoId: string): Promise<Response> {
+  await sweepExpired(env);
   const row = await env.DB.prepare(
     "SELECT video_id, kind, priority, status, leased_by, lease_expires_at, attempts, tried_nodes, last_outcome, created_at, done_at FROM jobs WHERE video_id = ?1 AND kind = 'primary'",
   )
@@ -97,6 +100,19 @@ async function showJob(env: Env, videoId: string): Promise<Response> {
     .first<JobRow>();
   if (row === null) return notFound();
   return json({ ...row, tried_nodes: JSON.parse(row.tried_nodes) as string[] });
+}
+
+async function showTranscript(env: Env, videoId: string): Promise<Response> {
+  const object = VIDEO_ID.test(videoId) ? await env.TRANSCRIPTS.get(transcriptKey(videoId)) : null;
+  if (object === null) return notFound();
+  const meta = object.customMetadata ?? {};
+  return json({
+    video_id: videoId,
+    transcript: JSON.parse(await object.text()) as unknown,
+    node_id: meta.node_id ?? null,
+    lease_id: meta.lease_id ?? null,
+    produced_at: meta.produced_at ?? null,
+  });
 }
 
 /** Handles `/ops/*`: absent without `OPS_TOKEN`, otherwise behind the operator bearer, checked before anything else. */
@@ -126,6 +142,14 @@ export async function handleOps(request: Request, env: Env, path: string): Promi
   const job = /^\/ops\/jobs\/([^/]+)$/.exec(path);
   if (request.method === "GET" && job?.[1] !== undefined) {
     return showJob(env, job[1]);
+  }
+  const transcript = /^\/ops\/transcripts\/([^/]+)$/.exec(path);
+  if (request.method === "GET" && transcript?.[1] !== undefined) {
+    return showTranscript(env, transcript[1]);
+  }
+  const node = /^\/ops\/nodes\/([^/]+)$/.exec(path);
+  if (request.method === "DELETE" && node?.[1] !== undefined) {
+    return (await revokeNode(env, node[1])) === null ? notFound() : json({ node_id: node[1], state: "disabled" });
   }
   return notFound();
 }

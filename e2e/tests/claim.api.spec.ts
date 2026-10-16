@@ -41,4 +41,21 @@ test("2 nodes claim 6 jobs concurrently and each job is handed out once", async 
     expect(job).toMatchObject({ status: "leased", attempts: 1 });
     expect(job.tried_nodes).toHaveLength(1);
   }
+
+  // E2E-13 in full: each node answers its own jobs, and all 6 end done.
+  await Promise.all(
+    answers.flatMap((jobs, i) =>
+      jobs.map(async (leased) => {
+        const response = await request.post(`${workerUrl}/node/result`, {
+          headers: { Authorization: `Bearer ${tokens[i]}` },
+          data: { lease_id: leased.lease_id, outcome: "no_transcript", transcript: null },
+        });
+        expect(response.status()).toBe(200);
+      }),
+    ),
+  );
+  for (const id of ids) {
+    const job = await (await request.get(`${workerUrl}/ops/jobs/${id}`, { headers: opsHeaders })).json();
+    expect(job).toMatchObject({ status: "done", attempts: 1 });
+  }
 });
