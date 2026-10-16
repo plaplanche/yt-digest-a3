@@ -7,3 +7,4 @@
 2026-10-16: `pydantic` is a runtime dependency of the node package, as the generated models need it.
 2026-10-16: A cue is "kept" (5.4 step 5) when at least one of its lines survives steps 3 and 4; the paragraph gap is measured in whole milliseconds so that 2.0 s starts a paragraph despite float rounding.
 2026-10-16: SponsorBlock segments enter `clean_cues` as a list of `(start, end)` float pairs, and the result is a list of paragraph strings, so that truncation and pages can follow without re-splitting.
+2026-10-16: SponsorBlock uses the standard library `urllib`; the log line carries the HTTP status (0 on a network error), and a 200 body that is not the expected JSON counts as `error` with no segments.
