@@ -16,6 +16,9 @@ dev = [
     "ruff",
 ]
 
+[project.scripts]
+yt-digest-node = "yt_digest_node.cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
