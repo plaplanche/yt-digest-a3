@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NodeClaimRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "max_jobs": {"type": "integer", "minimum": 1, "maximum": 10}
+  }
+}

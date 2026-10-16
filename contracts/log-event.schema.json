@@ -8,7 +8,7 @@
     "ts": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"},
     "level": {"type": "string", "enum": ["debug", "info", "warn", "error"]},
     "service": {"type": "string", "enum": ["node", "worker"]},
-    "event": {"title": "LogEventName", "type": "string", "enum": ["service.started", "fetch.transcript", "sponsorblock.call"]},
+    "event": {"title": "LogEventName", "type": "string", "enum": ["service.started", "fetch.transcript", "sponsorblock.call", "node.enrolled", "node.revoked", "node.heartbeat", "job.enqueued", "job.claimed", "job.completed", "job.released", "job.lease_expired", "job.stale_result", "job.validation_failed", "auth.bearer.rejected", "auth.client.registered", "auth.oauth.completed", "auth.oauth.denied", "auth.token.issued", "auth.refresh.reuse_detected", "auth.origin.rejected", "mcp.tool.call", "worker.call"]},
     "request_id": {"type": "string"},
     "video_id": {"type": "string"},
     "attrs": {"type": "object"}

@@ -34,6 +34,13 @@ describe("log", () => {
     expect(line).toMatchObject({ level: "info", service: "worker", event: "service.started", request_id: "r1" });
     expect(line.ts).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   });
+  test("accepts a lot 2 event", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    log("job.claimed", { video_id: "dQw4w9WgXcQ", attrs: { node_id: "n1" } });
+    const line = JSON.parse(String(spy.mock.calls[0]?.[0])) as Record<string, unknown>;
+    spy.mockRestore();
+    expect(line).toMatchObject({ event: "job.claimed", video_id: "dQw4w9WgXcQ" });
+  });
   test("throws for an event outside the catalogue", () => {
     expect(() => log("nope.event" as LogEventName)).toThrow("unknown log event");
   });
