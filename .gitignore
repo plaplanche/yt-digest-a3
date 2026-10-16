@@ -6,3 +6,6 @@ __pycache__/
 node_modules/
 .stack/
 .wrangler/
+ci-artifacts/
+test-results/
+playwright-report/

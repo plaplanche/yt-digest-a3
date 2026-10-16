@@ -12,5 +12,9 @@ npm ci --prefix worker
 npm run --prefix worker typecheck
 npm run --prefix worker lint
 
+npm ci --prefix e2e
+npm run --prefix e2e typecheck
+npm run --prefix e2e lint
+
 mapfile -t shell_files < <(find scripts -name '*.sh' | sort)
 uvx --from shellcheck-py shellcheck "${shell_files[@]}"
