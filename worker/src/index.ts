@@ -5,6 +5,7 @@ import { callback } from "./callback";
 import { handleNode } from "./nodes";
 import { authorize, consent, discovery, register } from "./oauth";
 import { handleOps } from "./ops";
+import { token } from "./token";
 
 const DISCOVERY_PATHS = [
   "/.well-known/oauth-protected-resource",
@@ -29,6 +30,7 @@ export default {
     if (method === "POST" && path === "/register") return register(request, env);
     if (method === "GET" && path === "/authorize") return authorize(request, env);
     if (method === "POST" && path === "/authorize/consent") return consent(request, env);
+    if (method === "POST" && path === "/token") return token(request, env);
     if (method === "GET" && path === "/callback") return callback(request, env);
     return notFound();
   },
