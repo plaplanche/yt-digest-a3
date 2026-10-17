@@ -2,6 +2,7 @@ import pkg from "../package.json";
 import type { Env } from "./env";
 import { json, notFound } from "./http";
 import { callback } from "./callback";
+import { handleMcp } from "./mcp";
 import { handleNode } from "./nodes";
 import { authorize, consent, discovery, register } from "./oauth";
 import { handleOps } from "./ops";
@@ -31,6 +32,7 @@ export default {
     if (method === "GET" && path === "/authorize") return authorize(request, env);
     if (method === "POST" && path === "/authorize/consent") return consent(request, env);
     if (method === "POST" && path === "/token") return token(request, env);
+    if (method === "POST" && path === "/mcp") return handleMcp(request, env);
     if (method === "GET" && path === "/callback") return callback(request, env);
     return notFound();
   },

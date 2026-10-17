@@ -13,4 +13,5 @@ export interface Env {
   GOOGLE_CLIENT_SECRET?: string;
   ADMIN_EMAIL?: string;
   TOKEN_ENC_KEY?: string;
+  ALLOWED_ORIGINS?: string;
 }
